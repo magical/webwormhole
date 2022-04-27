@@ -27,7 +27,6 @@ import (
 	webrtc "github.com/pion/webrtc/v3"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"golang.org/x/crypto/acme/autocert"
 	"nhooyr.io/websocket"
 	"webwormhole.io/wormhole"
 )
@@ -344,7 +343,6 @@ func server(args ...string) {
 	httpsaddr := set.String("https", ":https", "https listen address")
 	debugaddr := set.String("debug", "", "debug and metrics listen address")
 	hosts := set.String("hosts", "", "comma separated list of hosts by which site is accessible")
-	secretpath := set.String("secrets", os.Getenv("HOME")+"/keys", "path to put let's encrypt cache")
 	cert := set.String("cert", "", "https certificate (leave empty to use letsencrypt)")
 	key := set.String("key", "", "https certificate key")
 	html := set.String("ui", "./web", "path to the web interface files")
@@ -418,12 +416,6 @@ func server(args ...string) {
 		fs.ServeHTTP(w, r)
 	}
 
-	m := &autocert.Manager{
-		Cache:      autocert.DirCache(*secretpath),
-		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist(strings.Split(*hosts, ",")...),
-	}
-
 	ssrv := &http.Server{
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 60 * time.Minute,
@@ -447,11 +439,7 @@ func server(args ...string) {
 		WriteTimeout: 60 * time.Minute,
 		IdleTimeout:  20 * time.Second,
 		Addr:         *httpaddr,
-		Handler:      m.HTTPHandler(http.HandlerFunc(handler)),
-	}
-
-	if *cert == "" && *key == "" {
-		ssrv.TLSConfig.GetCertificate = m.GetCertificate
+		Handler:      http.HandlerFunc(handler),
 	}
 
 	errc := make(chan error)
@@ -460,7 +448,6 @@ func server(args ...string) {
 		go func() { errc <- http.ListenAndServe(*debugaddr, nil) }()
 	}
 	if *httpsaddr != "" {
-		srv.Handler = m.HTTPHandler(nil) // Enable redirect to https handler.
 		go func() { errc <- ssrv.ListenAndServeTLS(*cert, *key) }()
 	}
 	if *httpaddr != "" {
