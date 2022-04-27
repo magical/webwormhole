@@ -1,3 +1,6 @@
+
+// +build wwserver
+
 package main
 
 // This is the signalling server. It relays messages between peers wishing to connect.
@@ -28,6 +31,12 @@ import (
 	"nhooyr.io/websocket"
 	"webwormhole.io/wormhole"
 )
+
+// see main.go
+func init() {
+	subcmds["server"] = server
+}
+
 
 // slotTimeout is the the maximum amount of time a client is allowed to
 // hold a slot.
