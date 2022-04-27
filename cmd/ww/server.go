@@ -398,7 +398,7 @@ func server(args ...string) {
 
 		// Set HSTS header for 2 years on HTTPS connections.
 		if *httpsaddr != "" {
-			w.Header().Set("Strict-Transport-Security", "max-age=63072000")
+			w.Header().Set("Strict-Transport-Security", "max-age=0")
 		}
 
 		// Return a redirect to source code repo for the go get URL.
