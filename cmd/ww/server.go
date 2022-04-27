@@ -368,6 +368,16 @@ func server(args ...string) {
 		stunServers = append(stunServers, webrtc.ICEServer{URLs: []string{s}})
 	}
 
+	// Build the Content-Security-Policy string
+	// unsafe-eval is required for wasm :(
+	// https://github.com/WebAssembly/content-security-policy/issues/7
+	// connect-src is required for safari :(
+	// https://bugs.webkit.org/show_bug.cgi?id=201591
+	csp := "default-src 'self'; script-src 'self' 'unsafe-eval'; img-src 'self' blob:; connect-src 'self' ws://localhost/"
+	for _, host := range strings.Split(*hosts, ",") {
+		csp += fmt.Sprintf(" wss://%v", host)
+	}
+
 	fs := gziphandler.GzipHandler(http.FileServer(http.Dir(*html)))
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		// Handle WebSocket connections.
@@ -380,14 +390,6 @@ func server(args ...string) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 
 		// Disallow 3rd party code to run when we're the origin.
-		// unsafe-eval is required for wasm :(
-		// https://github.com/WebAssembly/content-security-policy/issues/7
-		// connect-src is required for safari :(
-		// https://bugs.webkit.org/show_bug.cgi?id=201591
-		csp := "default-src 'self'; script-src 'self' 'unsafe-eval'; img-src 'self' blob:; connect-src 'self' ws://localhost/"
-		for _, host := range strings.Split(*hosts, ",") {
-			csp += fmt.Sprintf(" wss://%v", host)
-		}
 		w.Header().Set("Content-Security-Policy", csp)
 
 		// Set a small max age for cache. We might want to switch to a content-addressed
