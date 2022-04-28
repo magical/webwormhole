@@ -41,12 +41,6 @@ func init() {
 // hold a slot.
 const slotTimeout = 12 * time.Hour
 
-const importMeta = `<!doctype html>
-<meta charset=utf-8>
-<meta name="go-import" content="webwormhole.io git https://github.com/saljam/webwormhole">
-<meta http-equiv="refresh" content="0;URL='https://github.com/saljam/webwormhole'">
-`
-
 const serviceWorkerPage = `You're not supposed to get this file or end up here.
 
 This is a dummy URL is used by WebWormhole to help web browsers
@@ -397,12 +391,6 @@ func server(args ...string) {
 		// Set HSTS header for 2 years on HTTPS connections.
 		if *httpsaddr != "" {
 			w.Header().Set("Strict-Transport-Security", "max-age=0")
-		}
-
-		// Return a redirect to source code repo for the go get URL.
-		if r.URL.Query().Get("go-get") == "1" || r.URL.Path == "/cmd/ww" {
-			w.Write([]byte(importMeta))
-			return
 		}
 
 		// Handle the Service Worker private prefix. A well-behaved Service Worker
